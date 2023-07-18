@@ -20,7 +20,9 @@
 
 #ifdef ESP_PLATFORM
 #  include "esp_err.h"
-#  include "esp_bt.h"
+#  if defined(CONFIG_ENABLE_ARDUINO_DEPENDS)
+#    include "esp_bt.h"
+#  endif
 #  include "nvs_flash.h"
 #  if defined(CONFIG_NIMBLE_CPP_IDF)
 #    include "esp_nimble_hci.h"
@@ -32,7 +34,9 @@
 #    include "services/gap/ble_svc_gap.h"
 #    include "services/gatt/ble_svc_gatt.h"
 #  else
-#    include "nimble/esp_port/esp-hci/include/esp_nimble_hci.h"
+#    if defined(CONFIG_BT_CONTROLLER_ENABLED)
+#      include "nimble/esp_port/esp-hci/include/esp_nimble_hci.h"
+#    endif
 #  endif
 #else
 #  include "nimble/nimble/controller/include/controller/ble_phy.h"
@@ -42,7 +46,7 @@
 #  include "nimble/porting/nimble/include/nimble/nimble_port.h"
 #  include "nimble/porting/npl/freertos/include/nimble/nimble_port_freertos.h"
 #  include "nimble/nimble/host/include/host/ble_hs.h"
-#  include "nimble/nimble/host/include/host/ble_hs_pvcy.h"
+// #  include "nimble/nimble/host/include/host/ble_hs_pvcy.h" // 2023.07.18 CW-B-W: File not exist in NimBLE v1.4.0
 #  include "nimble/nimble/host/util/include/host/util/util.h"
 #  include "nimble/nimble/host/services/gap/include/services/gap/ble_svc_gap.h"
 #  include "nimble/nimble/host/services/gatt/include/services/gatt/ble_svc_gatt.h"
@@ -85,8 +89,8 @@ std::list <NimBLEAddress>   NimBLEDevice::m_ignoreList;
 std::vector<NimBLEAddress>  NimBLEDevice::m_whiteList;
 NimBLESecurityCallbacks*    NimBLEDevice::m_securityCallbacks = nullptr;
 uint8_t                     NimBLEDevice::m_own_addr_type = BLE_OWN_ADDR_PUBLIC;
-#ifdef ESP_PLATFORM
-uint16_t                    NimBLEDevice::m_scanDuplicateSize = CONFIG_BTDM_SCAN_DUPL_CACHE_SIZE;
+#if defined(ESP_PLATFORM) && defined(CONFIG_BT_CONTROLLER_ENABLED) && defined(CONFIG_BTDM_BLE_SCAN_DUPL)
+uint16_t                    NimBLEDevice::m_scanDuplicateSize = CONFIG_BTDM_SCAN_DUPL_CACHE_SIZE
 uint8_t                     NimBLEDevice::m_scanFilterMode = CONFIG_BTDM_SCAN_DUPL_TYPE;
 #endif
 
@@ -341,7 +345,7 @@ NimBLEClient* NimBLEDevice::getDisconnectedClient() {
 
 #endif // #if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#ifdef ESP_PLATFORM
+#if defined(ESP_PLATFORM) && defined(CONFIG_BT_CONTROLLER_ENABLED)
 /**
  * @brief Set the transmission power.
  * @param [in] powerLevel The power level to set, can be one of:
@@ -422,7 +426,7 @@ int NimBLEDevice::getPower(esp_ble_power_type_t powerType) {
 } // getPower
 
 #else
-
+#if MYNEWT_VAL(BLE_CONTROLLER)
 void NimBLEDevice::setPower(int dbm) {
     ble_phy_txpwr_set(dbm);
 }
@@ -431,6 +435,7 @@ void NimBLEDevice::setPower(int dbm) {
 int NimBLEDevice::getPower() {
     return ble_phy_txpwr_get();
 }
+#endif
 #endif
 
 /**
@@ -492,7 +497,7 @@ uint16_t NimBLEDevice::getMTU() {
 }
 
 
-#ifdef ESP_PLATFORM
+#if defined(ESP_PLATFORM) && defined(CONFIG_BT_CONTROLLER_ENABLED)
 /**
  * @brief Set the duplicate filter cache size for filtering scanned devices.
  * @param [in] cacheSize The number of advertisements filtered before the cache is reset.\n
@@ -855,6 +860,7 @@ void NimBLEDevice::init(const std::string &deviceName) {
         btStarted();
 #endif
 
+#ifdef CONFIG_BT_CONTROLLER_ENABLED
         errRc = nvs_flash_init();
 
         if (errRc == ESP_ERR_NVS_NO_FREE_PAGES || errRc == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -878,7 +884,10 @@ void NimBLEDevice::init(const std::string &deviceName) {
 
         ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
         ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_BLE));
+#endif
+#ifdef CONFIG_BTDM_CTRL_HCI_MODE_VHCI
         ESP_ERROR_CHECK(esp_nimble_hci_init());
+#endif
 #endif
         nimble_port_init();
 
@@ -900,7 +909,9 @@ void NimBLEDevice::init(const std::string &deviceName) {
         rc = ble_svc_gap_device_name_set(deviceName.c_str());
         assert(rc == 0);
 
+#if defined(ESP_PLATFORM) && defined(CONFIG_BT_CONTROLLER_ENABLED)
         ble_store_config_init();
+#endif
 
         nimble_port_freertos_init(NimBLEDevice::host_task);
     }
@@ -925,7 +936,9 @@ void NimBLEDevice::deinit(bool clearAll) {
     if (ret == 0) {
         nimble_port_deinit();
 #ifdef ESP_PLATFORM
+#if defined(CONFIG_BT_CONTROLLER_ENABLED)
         ret = esp_nimble_hci_and_controller_deinit();
+#endif
         if (ret != ESP_OK) {
             NIMBLE_LOGE(LOG_TAG, "esp_nimble_hci_and_controller_deinit() failed with error: %d", ret);
         }
@@ -1099,7 +1112,7 @@ void NimBLEDevice::setSecurityCallbacks(NimBLESecurityCallbacks* callbacks) {
 } // setSecurityCallbacks
 
 
-#ifdef ESP_PLATFORM
+#if defined(ESP_PLATFORM) && defined(CONFIG_BT_CONTROLLER_ENABLED)
 /**
  * @brief Set the own address type.
  * @param [in] own_addr_type Own Bluetooth Device address type.\n

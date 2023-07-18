@@ -69,7 +69,9 @@ public:
     void setShortName(const std::string &name);
     void addData(const std::string &data);  // Add data to the payload.
     void addData(char * data, size_t length);
+#if MYNEWT_VAL(BLE_CONTROLLER)
     void addTxPower();
+#endif
     void setPreferredParams(uint16_t min, uint16_t max);
     std::string getPayload();               // Retrieve the current advert payload.
 

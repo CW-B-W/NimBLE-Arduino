@@ -43,7 +43,7 @@
 #include "NimBLEAddress.h"
 
 #ifdef ESP_PLATFORM
-#  include "esp_bt.h"
+// #  include "esp_bt.h"
 #endif
 
 #include <map>
@@ -116,15 +116,17 @@ public:
     static NimBLEServer*    getServer();
 #endif
 
-#ifdef ESP_PLATFORM
+#if defined(ESP_PLATFORM) && defined(CONFIG_BT_CONTROLLER_ENABLED)
     static void             setPower(esp_power_level_t powerLevel, esp_ble_power_type_t powerType=ESP_BLE_PWR_TYPE_DEFAULT);
     static int              getPower(esp_ble_power_type_t powerType=ESP_BLE_PWR_TYPE_DEFAULT);
     static void             setOwnAddrType(uint8_t own_addr_type, bool useNRPA=false);
     static void             setScanDuplicateCacheSize(uint16_t cacheSize);
     static void             setScanFilterMode(uint8_t type);
 #else
+#if MYNEWT_VAL(BLE_CONTROLLER)
     static void             setPower(int dbm);
     static int              getPower();
+#endif
 #endif
 
     static void             setCustomGapHandler(gap_event_handler handler);

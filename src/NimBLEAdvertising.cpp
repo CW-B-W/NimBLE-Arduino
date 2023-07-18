@@ -56,7 +56,9 @@ void NimBLEAdvertising::reset() {
     m_advData.name                   = (uint8_t *)name;
     m_advData.name_len               = strlen(name);
     m_advData.name_is_complete       = 1;
+#if MYNEWT_VAL(BLE_CONTROLLER)
     m_advData.tx_pwr_lvl             = NimBLEDevice::getPower();
+#endif
     m_advData.flags                  = (BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
 
 #if !defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
@@ -1035,6 +1037,7 @@ void NimBLEAdvertisementData::setShortName(const std::string &name) {
 } // setShortName
 
 
+#if MYNEWT_VAL(BLE_CONTROLLER)
 /**
  * @brief Adds Tx power level to the advertisement data.
  */
@@ -1045,6 +1048,7 @@ void NimBLEAdvertisementData::addTxPower() {
     cdata[2] = NimBLEDevice::getPower();
     addData(cdata, 3);
 } // addTxPower
+#endif
 
 
 /**
