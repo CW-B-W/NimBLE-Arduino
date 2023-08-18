@@ -39,7 +39,9 @@
 #    endif
 #  endif
 #else
-#  include "nimble/nimble/controller/include/controller/ble_phy.h"
+#  if MYNEWT_VAL(BLE_CONTROLLER)
+#    include "nimble/nimble/controller/include/controller/ble_phy.h"
+#  endif
 #endif
 
 #ifndef CONFIG_NIMBLE_CPP_IDF

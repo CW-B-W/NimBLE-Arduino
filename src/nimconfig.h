@@ -3,7 +3,7 @@
 #ifdef ESP_PLATFORM
 #include "sdkconfig.h"
 #else
-#include "ext_nimble_config.h"
+// #include "ext_nimble_config.h"
 #endif
 
 #include "nimconfig_rename.h"
